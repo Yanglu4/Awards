@@ -1,0 +1,187 @@
+---
+title: "Awards"
+author: "Yang"
+date: "February 11, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+awards<-read.csv("awards.csv")
+attach(awards)
+```
+
+**Comments on significance of predictors**
+
+##Model 1: Math as a continuous predictor
+
+###Fit 
+```{r}
+m1=glm(numawards~1+math,family = poisson(link = log),x=TRUE)
+summary(m1)
+```
+
+###Comment on the significance of math as a predictor
+Math is a significant predictor for number of awards since the p-value is small(<0.05).
+
+##Model 2: Prog as a factor predictor
+###Fit
+```{r}
+m2=glm(numawards~1+as.factor(prog),family=poisson(link=log),x=TRUE)
+summary(m2)
+```
+
+###Comments on significance of params
+The model has 3 parameters. And $\beta_0~,\beta_1$ are statistically important since they have small p-value(1.38e-06 and 3.59e-06 respectively) compared with 0.05 while $\beta_2$ is not statistically significant in our model since it has a large p-value 0.679.\newline
+
+###Wald test
+```{r}
+I = t(m2$x)%*%diag(m2$weights)%*%m2$x
+I_inv = solve(I)
+sd <- sqrt(diag(I_inv))
+p_value <- pchisq((m2$coefficients/sd)^2,df=2,lower.tail=FALSE)
+p_value
+```
+Meanwhile, according to the wald test, factor2("Academic") is statistically significant with p-value 2.174618e-05 while factor3("Vocational") is not statistically significant due to its p-value 9.180740e-01. 
+
+###Likelihood ratio test
+```{r LR test}
+library(lmtest)
+m_null=glm(numawards~1,family=poisson(link=log),x=TRUE)
+test=lrtest(m2,m_null)
+test
+test$`Pr(>Chisq)`
+```
+According to the likelihood ratio test resulting in p-value=2.786791e-12<0.05, we reject the null model and can conclude that prog is a significant predictor.
+
+
+
+##Model 3: numawards~1+math+as.factor(prog)
+
+###Fit
+```{r model3:numawards~1+math+as.factor(prog)}
+m3=glm(numawards~1+math+as.factor(prog), family=poisson(link='log'),x=TRUE)
+summary(m3)
+```
+model 3:numawards~1+math+as.factor(prog), has 4 parameters.\newline
+
+###Interpretation 
+Expected number of awards should increase by $e^{0.07015}$ if **math** is increased by 1.\newline 
+The difference in expected number of awards between student enrolled in **academic** program and in general program is $e^{1.08386}$.\newline
+The difference in expected number of awards between student enrolled in **vocational** program and in general program is $e^{0.36981}$.\newline
+\newline
+
+##Model 4: numawards~1 + math * as.factor(prog)
+
+###Fit
+```{r model4:1 + math * as.factor(prog)}
+m4=glm(numawards~1+math*as.factor(prog), family=poisson(link='log'),x=TRUE)
+summary(m4)
+```
+model 4: numawards ~ 1 + math * as.factor(prog), has 6 parameters.\newline
+
+###Interpretation
+Expected number of awards should increase by $e^{0.044}$ if **math** is increased by 1.\newline
+The difference in expected number of awards between student enrolled in **academic** program and in general program is $e^{-0.44107}$.\newline
+The difference in expected number of awards between student enrolled in **vocational** program and in general program is $e^{-0.84473}$.\newline
+The difference in expected number of awards between student enrolled in **academic** program and in general program is expected to increase by $e^{0.02841}$ if **math** increase by 1.\newline
+The difference in expected number of awards between student enrolled in vocational program and in general program is expected to increase by $e^{0.02841}$ if **math** increase by 1.\newline
+
+##Using Plot to Analyze
+
+###model1
+```{r}
+awards$m1=m1$fitted.values
+awards$m2=m2$fitted.values
+awards$m3=m3$fitted.values
+awards$m4=m4$fitted.values
+X=seq(30,70,5)
+df= split(awards, cut(awards$math, breaks = seq(30,75,5)))
+Mean_award <- function(x){
+  mean(x$numawards)
+}
+Mean_prediction_m1 <- function(x){
+  mean(x$m1)
+}
+True_awards = sapply(df, Mean_award)
+Estimated_awards_1=sapply(df,Mean_prediction_m1)
+
+plot(X,True_awards,main="Fitted line")
+lines(X,Estimated_awards_1)
+plot(m1)
+```
+
+###model2
+```{r}
+Mean_prediction_m2 <- function(x){
+  mean(x$m2)
+}
+Estimated_awards_2=sapply(df,Mean_prediction_m2)
+plot(as.factor(awards$prog),awards$numawards)
+academic=subset(awards,prog==2)
+vocational=subset(awards,prog==3)
+general=subset(awards,prog==1)
+points(awards$prog,awards$numawards)
+plot(m2)
+```
+
+###model3
+*The black dots are true datapoints and the red dots are # of awards estimated by model 3.*
+```{r}
+plot(academic$math,academic$numawards,col="black",pch=20,xlab="math",ylab = "# of awards",main = "Students Enrolled in Academic")
+points(academic$math,academic$m3,col="red")
+legend(x=3.5,y=14, legend=c("True", "Predicted"),fill=c("black", "red"))
+
+plot(vocational$math,vocational$numawards,col="black",pch=20,xlab="math",ylab = "# of awards",main = "Students Enrolled in vocational")
+points(vocational$math,vocational$m3,col="red")
+legend(x=3.5,y=14, legend=c("True", "Predicted"),fill=c("black", "red"))
+
+plot(general$math,general$numawards,col="black",pch=20,xlab="math",ylab = "# of awards",main = "Students Enrolled in General")
+points(general$math,general$m3,col="red")
+legend(x=3.5,y=14, legend=c("True", "Predicted"),fill=c("black", "red"))
+
+
+plot(awards$math,awards$numawards,col="black",pch=20,xlab="math",ylab = "# of awards",main = "Math against # of rewards among three categories")
+points(awards$math,awards$m3,col="red")
+legend(x=3.5,y=14, legend=c("True", "Predicted"),fill=c("black", "red"))
+plot(m3)
+```
+
+###model4
+**Note: The black dots are true datapoints and the red dots are # of awards estimated by model 4.**
+```{r}
+plot(academic$math,academic$numawards,col="black",pch=20,xlab="math",ylab = "# of awards",main = "Students Enrolled in Academic")
+points(academic$math,academic$m4,col="red")
+legend(x=3.5,y=14, legend=c("True", "Predicted"),fill=c("black", "red"))
+
+plot(vocational$math,vocational$numawards,col="black",pch=20,xlab="math",ylab = "# of awards",main = "Students Enrolled in vocational")
+points(vocational$math,vocational$m4,col="red")
+legend(x=3.5,y=14, legend=c("True", "Predicted"),fill=c("black", "red"))
+
+plot(general$math,general$numawards,col="black",pch=20,xlab="math",ylab = "# of awards",main = "Students Enrolled in General")
+points(general$math,general$m4,col="red")
+legend(x=3.5,y=14, legend=c("True", "Predicted"),fill=c("black", "red"))
+
+
+plot(awards$math,awards$numawards,col="black",pch=20,xlab="math",ylab = "# of awards",main = "Math against # of rewards among three categories")
+points(awards$math,awards$m4,col="red")
+legend(x=3.5,y=14, legend=c("True", "Predicted"),fill=c("black", "red"))
+plot(m4)
+```
+
+
+##Compare Deviance
+```{r Compare Deviance}
+m1$deviance
+m2$deviance
+m3$deviance
+m4$deviance
+```
+
+Based on the deviance of model 1 to 4, we can conclude that model 4 is the best with smallest deviance 189.1016.
+
+
+

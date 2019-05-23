@@ -1,5 +1,5 @@
 # Data Descriotion
-The dataset in file *awards.csv* contains several variables:
+The data in file *awards.csv* contains several variables:
 <br />
 - **numawards**: the discrete response variable, indicating the number of awards received.
 - **math**: a continuous variable giving the student's scores on their final mathematics exam.
@@ -8,7 +8,6 @@ The dataset in file *awards.csv* contains several variables:
 
 # Project Summary
 The purpose of this project is to investigate the potential dependence between number of awards received and the student's scores
-on their final mathematics exam and the type of program in which the students were enrolled. 
-<br />
+on their final mathematics exam and the type of program in which the students were enrolled. The code is available in file *Awards_analysis.rmd* and report in file *Awards_report.pdf*. 
 <br />
 
